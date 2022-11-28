@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MainSyntaxAnalysis.Constants;
+using MainSyntaxAnalysis.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -11,31 +13,16 @@ namespace MainSyntaxAnalysis
     {
         public static int CodeLine = 1;
         char Peek = ' ';
-        Dictionary<string, Word> keywords = new Dictionary<string, Word>()
-        {
-
-        };
         private string CodeText;
         private int Cursor = 0;
 
-        private void Reserve(Word word)
+        private void AddKeyWord(Word word)
         {
-            keywords.Add(word.Lexeme, word);
+            Words.KeyWords.Add(word.Value, word);
         }
 
-        public LexemAnalyzer(string filePath)
+        public LexemAnalysis(string filePath)
         {
-            Reserve(new Word("if", (int)Tags.If));
-            Reserve(new Word("else", (int)Tags.Else));
-            Reserve(new Word("while", (int)Tags.While));
-            Reserve(new Word("do", (int)Tags.Do));
-            Reserve(new Word("break", (int)Tags.Break));
-            Reserve(Words.True);
-            Reserve(Words.False);
-            Reserve(DataTypes.Int);
-            Reserve(DataTypes.Char);
-            Reserve(DataTypes.Float);
-            Reserve(DataTypes.Bool);
             CodeText = File.ReadAllText(filePath);
         }
 
@@ -77,7 +64,7 @@ namespace MainSyntaxAnalysis
                 }
                 else if (Peek == '\n')
                 {
-                    Line = Line + 1;
+                    CodeLine++;
                 }
                 else
                 {
@@ -185,14 +172,14 @@ namespace MainSyntaxAnalysis
                 } while (char.IsLetterOrDigit(Peek));
 
                 string s = buffer.ToString();
-                bool isKeyword = keywords.ContainsKey(s);
+                bool isKeyword = Words.KeyWords.ContainsKey(s);
                 if (isKeyword)
                 {
-                    return keywords[s];
+                    return Words.KeyWords.[s];
                 }
 
                 Word word = new Word(s, (int)Tags.Id);
-                keywords.Add(s, word);
+                Words.KeyWords.Add(s, word);
                 return word;
             }
 

@@ -62,5 +62,9 @@ namespace SyntacticAnalyzer
             return node;
         }
 
+        public void Error(string msg)
+        {
+            Console.WriteLine(msg);
+        }
     }
 }
