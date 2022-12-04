@@ -16,14 +16,14 @@ namespace MainSyntaxAnalysis
         private string CodeText;
         private int Cursor = 0;
 
-        private void AddKeyWord(Word word)
-        {
-            Words.KeyWords.Add(word.Value, word);
-        }
-
         public LexemAnalysis(string filePath)
         {
             CodeText = File.ReadAllText(filePath);
+        }
+
+        private void AddKeyWord(Word word)
+        {
+            Words.KeyWords.Add(word.Value, word);
         }
 
         void ReadChar()
