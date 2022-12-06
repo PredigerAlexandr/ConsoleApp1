@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using DataType = MainSyntaxAnalysis.Models.DataType;
 
 namespace MainSyntaxAnalysis
@@ -29,15 +30,57 @@ namespace MainSyntaxAnalysis
         }
 
         //обрабатывает первые фигурные скобки 
-        private BaseNode Block()
+        private StatementNode Block()
         {
             Match('{');
             IdentifiersTable table = top;//резервирует локальные переменные внешенго блока
             top = new IdentifiersTable(top);//создаёт новую таблицу идентификаторов для локальных переменных
             Declare();
-            StatementNode node = Statements();//???
+            StatementNode node = Statements();//
 
-            return new BaseNode();
+            return node;
+        }
+
+        private StatementNode Statements()
+        {
+            if (currentLexem.Tag == '}')
+            {
+                return StatementNode.Null;
+            }
+            else
+            {
+                return new SequenceNode(Statement(), Statements());
+            }
+        }
+
+        private StatementNode Statement()
+        {
+            ExpressionNode expression;
+            StatementNode statement,
+                statement1,
+                statement2,
+                savedStatement;
+
+            switch (currentLexem.Tag)
+            {
+                case (int)Tags.If:
+                    Match((int)Tags.If);
+                    Match('(');
+                    expression = Bool();
+                    Match(')');
+                    statement1 = Statement();
+                    if (currentLexem.Tag != (int)Tags.Else)
+                    {
+                        return new IfNode(expression, statement1);
+                    }
+                    Match((int)Tags.Else);
+                    statement2 = Statement();
+                    return new IfElseNode(expression, statement1, statement2);
+                case '{':
+                    return Block();
+                default:
+                    return Assign();
+            }
         }
 
         //переменная не может быть использована без чистой инициализации, только после этого она может быь использована, поэтому начало каждого блока проверяется на иницилизацию
