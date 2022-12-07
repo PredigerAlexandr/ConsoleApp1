@@ -54,13 +54,14 @@ namespace MainSyntaxAnalysis
         {
             for (; ; ReadChar())
             {
-                if (Peek == ' ' || Peek == '\t')
+                if (Peek == ' ' || Peek == '\t' || Peek == '\r')
                 {
                     continue;
                 }
                 else if (Peek == '\0')
                 {
-                    return new Token('\0');
+                    continue;
+                    //return new Token('\0');
                 }
                 else if (Peek == '\n')
                 {
@@ -119,15 +120,26 @@ namespace MainSyntaxAnalysis
                     {
                         return new Token('<');
                     }
-                case '>':
-                    if (ReadChar('='))
+                case '-':
+                    if (ReadChar('-'))
                     {
-                        return Words.Ge;
+                        return Words.Dec;
                     }
-                    else
+                    break;
+                    //else
+                    //{
+                    //    return new Token('>');
+                    //}
+                case '+':
+                    if (ReadChar('+'))
                     {
-                        return new Token('>');
+                        return Words.Inc;
                     }
+                    break;
+                    //else
+                    //{
+                    //    return new Token('&');
+                    //}
             }
 
             if (char.IsDigit(Peek))
@@ -175,7 +187,7 @@ namespace MainSyntaxAnalysis
                 bool isKeyword = Words.KeyWords.ContainsKey(s);
                 if (isKeyword)
                 {
-                    return Words.KeyWords.[s];
+                    return Words.KeyWords[s];
                 }
 
                 Word word = new Word(s, (int)Tags.Id);

@@ -6,19 +6,22 @@ using System.Threading.Tasks;
 
 namespace MainSyntaxAnalysis.Node
 {
+    //нода присваения значения
     public class AssignNode:StatementNode
     {
-        IdentifierNode identifierNode;
+        public string Description = "AssignNode";
+
+        InitializationNode initializationNode;
         ExpressionNode expressionNode;
         
-        public AssignNode(IdentifierNode identifierNode, ExpressionNode expressionNode)
+        public AssignNode(InitializationNode initializationNode, ExpressionNode expressionNode)
         {
-            this.identifierNode = identifierNode;
+            this.initializationNode = initializationNode;
             this.expressionNode = expressionNode;
 
-            if(identifierNode.DataType != expressionNode.Type)
+            if(initializationNode.DataType.Value != expressionNode.Type.Value)//проверка на соответсие типов
             {
-                throw new Exception($"Ошибка в неправильном присвоении типов: {identifierNode.Word.Value}");
+                throw new Exception($"Ошибка в неправильном присвоении типов: {initializationNode.Word.Value}");
             }
         } 
     }

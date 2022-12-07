@@ -4,6 +4,7 @@ using MainSyntaxAnalysis.Node;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
@@ -25,9 +26,11 @@ namespace MainSyntaxAnalysis
             _lexemAnalysis = new LexemAnalysis(path);
         }
 
-        public void StartParser()
+        public StatementNode StartParser()
         {
+            Move();
             StatementNode baseNode = Block();//начинаем обработку самого внешнего блока
+            return baseNode;
         }
 
         //обрабатывает первые фигурные скобки 
@@ -35,7 +38,7 @@ namespace MainSyntaxAnalysis
         {
             Match('{');
             StatementNode node = Statements();//
-
+            Match('}');
             return node;
         }
 
@@ -94,37 +97,124 @@ namespace MainSyntaxAnalysis
             {
                 throw new Exception($"Use of undeclared variable {token}");
             }
-            if (currentLexem.Tag == '=')
-            {
-                Move();
-                statement = new AssignNode(Words.IdentifiersTable((Word)token).Value, Bool());//создаём ноду присваения, также в ней проверяется, чтобы для числовому типу могло присвоится числовое выржение, а логическому выражению логическое и если инача, то выкидывает ошибку 
-            }
+            Match('=');
+            statement = new AssignNode(Words.IdentifiersTable[((Word)token).Value], Bool());//создаём ноду присваения, также в ней проверяется, чтобы числовому типу могло присвоится числовое выржение, а логическому выражению логическое и если инача, то выкидывает ошибку 
             Match(';');
             return statement;
         }
 
+        //обработка '||' случая// последня инстанция обработки
         private ExpressionNode Bool()
         {
             ExpressionNode expression = Join();
-            while (Lookahead.Tag == (int)Tags.Or)
+            while (currentLexem.Tag == (int)Tags.Or)
             {
-                Token token = Lookahead;
+                Token token = currentLexem;
                 Move();
                 expression = new OrNode(token, expression, Join());
             }
             return expression;
         }
 
+        //обработка случая '&&' // '&&'->'||'
         private ExpressionNode Join()
         {
             ExpressionNode expression = Equality();
-            while (Lookahead.Tag == (int)Tags.And)
+            while (currentLexem.Tag == (int)Tags.And)
             {
-                Token token = Lookahead;
+                Token token = currentLexem;
                 Move();
                 expression = new AndNode(token, expression, Equality());
             }
             return expression;
+        }
+
+        //обработка '==' и '!' // '==' и '!' -> '&&'
+        private ExpressionNode Equality()
+        {
+            ExpressionNode expression = Comparison();
+            while (currentLexem.Tag == (int)Tags.Eq || currentLexem.Tag == (int)Tags.Ne)
+            {
+                Token token = currentLexem;
+                Move();
+                expression = new ComparisonNode(token, expression, Comparison());
+            }
+            return expression;
+        }
+
+        //обработка '>' и '<'// '>' и '<' -> '==' и '!'
+        private ExpressionNode Comparison()
+        {
+            ExpressionNode expression = Expression();
+            switch (currentLexem.Tag)
+            {
+                case '<':
+                case (int)Tags.Le:
+                case (int)Tags.Ge:
+                case '>':
+                    Token token = currentLexem;
+                    Move();
+                    return new ComparisonNode(token, expression, Expression());
+                default:
+                    return expression;
+            }
+        }
+
+        //обработка выражений с '+' и '-'// '+' и '-' -> '>' и '<'
+        private ExpressionNode Expression()
+        {
+            ExpressionNode expression = Term();
+            while (currentLexem.Tag == '+'
+                || currentLexem.Tag == '-')
+            {
+                Token token = currentLexem;
+                Move();
+                expression = new ArithmeticNode(token, expression, Term());
+            }
+            return expression;
+        }
+
+        //обработка выражений с '*' и '/'// '*' и '/' -> '+' и '-'
+        private ExpressionNode Term()
+        {
+            ExpressionNode expression = Unary();
+            while (currentLexem.Tag == '*'
+                || currentLexem.Tag == '/')
+            {
+                Token token = currentLexem;
+                Move();
+                expression = new ArithmeticNode(token, expression, Unary());
+            }
+            return expression;
+        }
+
+        private ExpressionNode Unary()
+        {
+            if (currentLexem.Tag == '-')
+            {
+                Move();
+                return new UnaryNode(Words.Minus, Unary());
+            }
+            else if (currentLexem.Tag == '!')
+            {
+                Token token = currentLexem;
+                Move();
+                return new NotNode(token, Unary());
+            }
+            else if (currentLexem.Tag == (int)Tags.Inc)
+            {
+                Move();
+                return new UnaryNode(Words.Inc, Factor());//будет работать только для контрукций типа ++а
+            }
+            else if (currentLexem.Tag == (int)Tags.Dec)
+            {
+                Move();
+                return new UnaryNode(Words.Dec, Factor());//будет работать только для контрукций типа --а
+            }
+            else
+            {
+                return Factor();
+            }
         }
         //переменная не может быть использована без чистой инициализации, только после этого она может быь использована, поэтому начало каждого блока проверяется на иницилизацию
         private StatementNode Declare()
@@ -139,14 +229,58 @@ namespace MainSyntaxAnalysis
             Token token = currentLexem;
             Match((int)Tags.Id);
             statement = new InitializationNode( type, (Word)token);
-            Words.IdentiiersTable.Add(((Word)token).Value, new InitializationNode(type, (Word)token));//добавляем в таблицу идентификаторов саму переменную и её ноду иницилизации, которая хранит информацию о типе переменной
+            Words.IdentifiersTable.Add(((Word)token).Value, new InitializationNode(type, (Word)token));//добавляем в таблицу идентификаторов саму переменную и её ноду иницилизации, которая хранит информацию о типе переменной
             Match(';');
 
             return statement;    
         }
 
-    //проверяем на предполагаемый элемент
-    private void Match(int t)
+        private ExpressionNode Factor()
+        {
+            ExpressionNode expressionNode = null;
+
+            switch (currentLexem.Tag)
+            {
+                case '(':
+                    Move();
+                    expressionNode = Bool();
+                    Match(')');
+                    return expressionNode;
+                case (int)Tags.Num:
+                    expressionNode = new ConstantNode(currentLexem, DataTypes.Int);
+                    Move();
+                    return expressionNode;
+                case (int)Tags.Real:
+                    expressionNode = new ConstantNode(currentLexem, DataTypes.Float);
+                    Move();
+                    return expressionNode;
+                case (int)Tags.True:
+                    expressionNode = new ConstantNode(Words.True, DataTypes.Bool);
+                    Move();
+                    return expressionNode;
+                case (int)Tags.False:
+                    expressionNode = new ConstantNode(Words.False, DataTypes.Bool);
+                    Move();
+                    return expressionNode;
+                case (int)Tags.Id:
+                    ExpressionNode identifier = new ExpressionNode(new Token(Words.IdentifiersTable[((Word)currentLexem).Value].Word.Tag), Words.IdentifiersTable[((Word)currentLexem).Value].DataType);
+                    if (identifier == null)
+                    {
+                        throw new Exception ($"Use of undeclared variable {currentLexem}");
+                    }
+                    Move();
+                    return identifier;
+                default:
+                    return expressionNode;
+                    throw new Exception("Syntax error");
+            }
+        }
+
+
+
+
+        //проверяем на предполагаемый элемент
+        private void Match(int t)
     {
         if (currentLexem.Tag == t)
         {

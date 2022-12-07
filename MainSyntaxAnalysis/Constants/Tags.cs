@@ -8,25 +8,26 @@ namespace MainSyntaxAnalysis.Constants
 {
     public enum Tags:int
     {
-        And = 0,
-        Basic = 1,
-        Break = 2,
-        Do = 3,
-        Else = 4,
-        Eq = 5,
-        False = 6,
-        Ge = 7,
-        Id = 8,
-        If = 9,
-        Index = 10,
-        Le = 11,
-        Minus = 12,
-        Ne = 13,
-        Num = 14,
-        Or = 15,
-        Real = 16,
-        Temp = 17,
-        True = 18,
-        While = 19
+        And = 1005,
+        Basic = 1006,
+        Break = 1007,
+        Dec = 1008,
+        Else = 1009,
+        Eq = 1010,
+        False = 1011,
+        Ge = 1012,
+        Id = 1013,
+        If = 1014,
+        Index = 1015,
+        Le = 1016,
+        Minus = 1017,
+        Ne = 1018,
+        Num = 1019,
+        Or = 1020,
+        Real = 1021,
+        Temp = 1022,
+        True = 1023,
+        Inc = 1024
+
     }
 }

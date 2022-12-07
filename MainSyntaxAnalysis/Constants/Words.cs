@@ -21,9 +21,9 @@ namespace MainSyntaxAnalysis.Constants
         public static Word False = new Word("false", (int)Tags.False);
         public static Word Temp = new Word("t", (int)Tags.Temp);
         public static Word If = new Word("if", (int)Tags.If);
-        public static Word While = new Word("while", (int)Tags.While);
+        public static Word Inc = new Word("inc", (int)Tags.Inc);
         public static Word Else = new Word("else", (int)Tags.Else);
-        public static Word Do = new Word("do", (int)Tags.Do);
+        public static Word Dec = new Word("dec", (int)Tags.Dec);
         public static Word Break = new Word("break", (int)Tags.Break);
 
         public static Dictionary<string, Word> KeyWords = new Dictionary<string, Word>()
@@ -39,9 +39,9 @@ namespace MainSyntaxAnalysis.Constants
             { False.Value, False },
             { Temp.Value, Temp },
             { If.Value, If },
-            { While.Value, While },
+            { Inc.Value, Inc },
             { Else.Value, Else },
-            { Do.Value, Do },
+            { Dec.Value, Dec },
             { Break.Value, Break }
         };
 

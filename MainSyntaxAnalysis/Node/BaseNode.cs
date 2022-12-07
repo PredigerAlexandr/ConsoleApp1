@@ -8,7 +8,7 @@ namespace MainSyntaxAnalysis.Node
 {
     public  class BaseNode
     {
-        public  left;
+        public BaseNode left;
         public BaseNode right;
 
         public BaseNode(BaseNode left=null, BaseNode right=null)

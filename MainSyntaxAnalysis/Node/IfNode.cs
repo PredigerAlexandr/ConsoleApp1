@@ -19,7 +19,7 @@ namespace MainSyntaxAnalysis.Node
 
             if (Expression.Type != DataTypes.Bool)//проверка на то, что бы в контрукции содержалось логическое выражение
             {
-                throw new 
+                throw new Exception("В конструкции If должно содержаться логическое выражение"); 
             }
         }
     }

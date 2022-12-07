@@ -9,13 +9,13 @@ namespace MainSyntaxAnalysis.Node
 {
     public class InitializationNode: StatementNode
     {
-        DataType dType;
-        Word word;
+        public DataType DataType;
+        public Word Word;
         
         public InitializationNode(DataType type, Word word)
         {
-            this.dType = type;
-            this.word = word;
+            this.DataType = type;
+            this.Word = word;
         }
 
     }
