@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -26,16 +27,13 @@ namespace MainSyntaxAnalysis
 
         public void StartParser()
         {
-            BaseNode baseNode = Block();//начинаем обработку самого внешнего блока
+            StatementNode baseNode = Block();//начинаем обработку самого внешнего блока
         }
 
         //обрабатывает первые фигурные скобки 
         private StatementNode Block()
         {
             Match('{');
-            IdentifiersTable table = top;//резервирует локальные переменные внешенго блока
-            top = new IdentifiersTable(top);//создаёт новую таблицу идентификаторов для локальных переменных
-            Declare();
             StatementNode node = Statements();//
 
             return node;
@@ -45,11 +43,11 @@ namespace MainSyntaxAnalysis
         {
             if (currentLexem.Tag == '}')
             {
-                return StatementNode.Null;
+                return new EmptyNode();
             }
             else
             {
-                return new SequenceNode(Statement(), Statements());
+                return new StatementNode(Statement(), Statements());
             }
         }
 
@@ -58,8 +56,7 @@ namespace MainSyntaxAnalysis
             ExpressionNode expression;
             StatementNode statement,
                 statement1,
-                statement2,
-                savedStatement;
+                statement2;
 
             switch (currentLexem.Tag)
             {
@@ -76,6 +73,9 @@ namespace MainSyntaxAnalysis
                     Match((int)Tags.Else);
                     statement2 = Statement();
                     return new IfElseNode(expression, statement1, statement2);
+                case (int)Tags.Basic:
+                    statement = Declare();
+                    return statement;
                 case '{':
                     return Block();
                 default:
@@ -83,46 +83,89 @@ namespace MainSyntaxAnalysis
             }
         }
 
+        //Обрабатываем процесс присванивания
+        private StatementNode Assign()
+        {
+            StatementNode statement;
+            Token token = currentLexem;
+            Match((int)Tags.Id);
+
+            if (!Words.KeyWords.ContainsKey(((Word)token).Value))//проверяем была ли ранее объявленна переменная и если нет, то выкидываем ошибку
+            {
+                throw new Exception($"Use of undeclared variable {token}");
+            }
+            if (currentLexem.Tag == '=')
+            {
+                Move();
+                statement = new AssignNode(Words.IdentifiersTable((Word)token).Value, Bool());//создаём ноду присваения, также в ней проверяется, чтобы для числовому типу могло присвоится числовое выржение, а логическому выражению логическое и если инача, то выкидывает ошибку 
+            }
+            Match(';');
+            return statement;
+        }
+
+        private ExpressionNode Bool()
+        {
+            ExpressionNode expression = Join();
+            while (Lookahead.Tag == (int)Tags.Or)
+            {
+                Token token = Lookahead;
+                Move();
+                expression = new OrNode(token, expression, Join());
+            }
+            return expression;
+        }
+
+        private ExpressionNode Join()
+        {
+            ExpressionNode expression = Equality();
+            while (Lookahead.Tag == (int)Tags.And)
+            {
+                Token token = Lookahead;
+                Move();
+                expression = new AndNode(token, expression, Equality());
+            }
+            return expression;
+        }
         //переменная не может быть использована без чистой инициализации, только после этого она может быь использована, поэтому начало каждого блока проверяется на иницилизацию
-        private void Declare()
+        private StatementNode Declare()
         {
-            while (currentLexem.Tag == (int)Tags.Basic)//проверяем на то, чтобы ади токена соответствовал айди типу данных
+            StatementNode statement;
+            if (DataTypes.DateTypesDictionary.ContainsKey(((Word)currentLexem).Value))//проверяем на нахождения данного типа данных в нашем списке типов
             {
-                if (DataTypes.DateTypesDictionary.ContainsKey(((Word)currentLexem).Value))//проверяем на нахождения данного типа данных в нашем списке типов
-                {
-                    throw new Exception($"Найден неопознанный тип данных в строке: {codeLine}");
-                }
-                DataType type = (DataType)currentLexem;//задаём тип данных
-                Move();
-                Token token = currentLexem;
-                Match((int)Tags.Id);
-                Match(';');
-                IdentifierNode node = new IdentifierNode((Word)token, type);
-                top.Put(token, node);//добавляем иницилизрованные переменные в локальную таблицу идентификаторов
+                throw new Exception($"Найден неопознанный тип данных в строке: {codeLine}");
             }
+            DataType type = (DataType)currentLexem;//задаём тип данных
+            Move();
+            Token token = currentLexem;
+            Match((int)Tags.Id);
+            statement = new InitializationNode( type, (Word)token);
+            Words.IdentiiersTable.Add(((Word)token).Value, new InitializationNode(type, (Word)token));//добавляем в таблицу идентификаторов саму переменную и её ноду иницилизации, которая хранит информацию о типе переменной
+            Match(';');
+
+            return statement;    
         }
 
-        //проверяем на предполагаемый элемент
-        private void Match(int t)
+    //проверяем на предполагаемый элемент
+    private void Match(int t)
+    {
+        if (currentLexem.Tag == t)
         {
-            if (currentLexem.Tag == t)
-            {
-                Move();
-            }
-            else
-            {
-                throw new Exception($"Ошибка ожидаемой лексемы, строка: {codeLine}");
-            }
+            Move();
         }
-
-        //переход у следуюзей лексеме
-        private void Move()
+        else
         {
-            currentLexem = _lexemAnalysis.ScanNext();
-            if (currentLexem.Tag == '\0')//если равен концу строки
-            {
-                return;
-            }
+            throw new Exception($"Ошибка ожидаемой лексемы, строка: {codeLine}");
         }
     }
+
+    //переход у следуюзей лексеме
+    private void Move()
+    {
+        currentLexem = _lexemAnalysis.ScanNext();
+        if (currentLexem.Tag == '\0')//если равен концу строки
+        {
+            return;
+        }
+    }
+}
 }

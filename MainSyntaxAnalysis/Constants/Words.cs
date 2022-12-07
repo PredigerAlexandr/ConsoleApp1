@@ -1,4 +1,5 @@
 ﻿using MainSyntaxAnalysis.Models;
+using MainSyntaxAnalysis.Node;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,5 +44,7 @@ namespace MainSyntaxAnalysis.Constants
             { Do.Value, Do },
             { Break.Value, Break }
         };
+
+        public static Dictionary<string, InitializationNode> IdentifiersTable = new Dictionary<string, InitializationNode>();
     }
 }

@@ -8,16 +8,13 @@ namespace MainSyntaxAnalysis.Node
 {
     public class StatementNode
     {
-        public StatementNode()
+        StatementNode statment1;
+        StatementNode statment2;
+
+        public StatementNode(StatementNode statment1=null, StatementNode statment2=null)
         {
+            this.statment1 = statment1;
+            this.statment2 = statment2;
         }
-
-        public static StatementNode Null = new StatementNode();
-
-        public void Generate(int a, int b) { }
-
-        int After = 0;
-
-        public static StatementNode Enclosing = StatementNode.Null;
     }
 }
